@@ -161,7 +161,7 @@ router.get("/download-file", async (req, res) => {
   try {
     //get signed download url
     const signedRes = await axios.get(
-      `http://api.2xcell.in/api/v1/modules/download-signed-url?filepath=${req.query.filepath}`,
+      `https://api.2xcell.in/api/v1/modules/download-signed-url?filepath=${req.query.filepath}`,
       {
         headers: {
           token: req.headers.token,
