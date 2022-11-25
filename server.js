@@ -1,3 +1,4 @@
+require("dotenv").config({});
 const express = require("express");
 const mongoose = require("mongoose");
 
@@ -59,5 +60,5 @@ app.get("/*", (req, res) => {
 
 //RETURN REMAINING DOWNLOAD FILES
 
-const PORT = 4000;
-app.listen(PORT, console.log(`UP and Running ${PORT}`));
+const PORT = process.env.PORT || 4000;
+app.listen(PORT, console.log(`UP and Running on ${PORT}`));
