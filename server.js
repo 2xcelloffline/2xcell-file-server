@@ -50,8 +50,12 @@ app.use("/api/v1/contents", contentRoutes);
 
 app.get("/*", (req, res) => {
   try {
-    //console.log(req.path);
-    const file = path.resolve(path.join(__dirname, "resources", `${req.path}`));
+    const paths = req.path.split("/");
+    const ext = paths[paths.length - 1].split(".")[1];
+    const newFilePath = req.path.replace(`.${ext}`, ".epm");
+    const file = path.resolve(
+      path.join(__dirname, "resources", `${newFilePath}`)
+    );
     return res.sendFile(file);
   } catch (err) {
     return res.send("File not found!");
