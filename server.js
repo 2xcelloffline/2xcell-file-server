@@ -53,7 +53,7 @@ app.use("/api/v1/contents", contentRoutes);
 app.get("/*", (req, res) => {
   try {
     const file = path.resolve(
-      path.join(__dirname, "resources", `${req.path}.enc`)
+      path.join(__dirname, "resources", `${req.path}`)
     );
     if (!fs.existsSync(file)) {
       throw { message: "File not found!" };
