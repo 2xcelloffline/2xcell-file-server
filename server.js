@@ -32,8 +32,6 @@ mongoose.connection.on("reconnected", () =>
 
 //set cors
 app.use((req, res, next) => {
-  if (!req.origin) return res.send("Permission Denied!");
-
   res.header("Access-Control-Allow-Origin", "*");
   res.header(
     "Access-Control-Allow-Headers",
