@@ -5,7 +5,7 @@ const path = require("path");
 
 const app = express();
 
-const { sendFile } = require("./fileHandler");
+const { sendFile } = require("./filemanager");
 
 const fileRoutes = require("./routes/apis/file.routes");
 const contentRoutes = require("./routes/apis/content.routes");
