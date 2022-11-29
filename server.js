@@ -1,9 +1,11 @@
 require("dotenv").config({});
 const express = require("express");
 const mongoose = require("mongoose");
+const path = require("path");
 
 const app = express();
-const path = require("path");
+
+const { sendFile } = require("./fileHandler");
 
 const fileRoutes = require("./routes/apis/file.routes");
 const contentRoutes = require("./routes/apis/content.routes");
@@ -30,6 +32,8 @@ mongoose.connection.on("reconnected", () =>
 
 //set cors
 app.use((req, res, next) => {
+  if (!req.origin) return res.send("Permission Denied!");
+
   res.header("Access-Control-Allow-Origin", "*");
   res.header(
     "Access-Control-Allow-Headers",
@@ -50,19 +54,30 @@ app.use("/api/v1/contents", contentRoutes);
 
 app.get("/*", (req, res) => {
   try {
-    const paths = req.path.split("/");
-    const ext = paths[paths.length - 1].split(".")[1];
-    const newFilePath = req.path.replace(`.${ext}`, ".epm");
     const file = path.resolve(
-      path.join(__dirname, "resources", `${newFilePath}`)
+      path.join(__dirname, "resources", `${req.path}.enc`)
     );
-    return res.sendFile(file);
+    if (!fs.existsSync(file)) {
+      throw { message: "File not found!" };
+    }
+    sendFile({ file, res });
   } catch (err) {
     return res.send("File not found!");
   }
 });
 
-//RETURN REMAINING DOWNLOAD FILES
+process.on("uncaughtException", (err) => {
+  console.log(err.name, err.message);
+  process.exit(1);
+});
+
+process.on("UnhandledRejection", (err) => {
+  console.log(err.message);
+});
+
+process.on("error", (err) => {
+  console.log(err.message);
+});
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, console.log(`UP and Running on ${PORT}`));
