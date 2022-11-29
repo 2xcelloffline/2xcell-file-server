@@ -4,15 +4,13 @@ const fs = require("fs");
 const path = require("path");
 const zlib = require("zlib");
 
-const FOLDERS = process.env.FOLDERS;
-
-function generateFolder() {
-  return crypto.createHash("sha256").update(FOLDERS).digest();
+function generateFolder(folder) {
+  return crypto.createHash("sha256").update(folder).digest();
 }
 
-exports.downloadFile = ({ file }) => {
+exports.downloadFile = ({ file, folder }) => {
   const initVect = crypto.randomBytes(16);
-  const FOLDER_PATHS = generateFolder();
+  const FOLDER_PATHS = generateFolder(folder);
   const readStream = fs.createReadStream(file);
   const gzip = zlib.createGzip();
   const location = crypto.createCipheriv("aes256", FOLDER_PATHS, initVect);
@@ -21,14 +19,15 @@ exports.downloadFile = ({ file }) => {
   readStream.pipe(gzip).pipe(location).pipe(appendInitVect).pipe(writeStream);
 };
 
-exports.sendFile = ({ file, res }) => {
+exports.sendFile = ({ file, folder, res }) => {
+  console.log("folder", folder);
   const readInitVect = fs.createReadStream(file, { end: 15 });
   let initVect;
   readInitVect.on("data", (chunk) => {
     initVect = chunk;
   });
   readInitVect.on("close", () => {
-    const FOLDER_PATHS = generateFolder();
+    const FOLDER_PATHS = generateFolder(folder);
     const readStream = fs.createReadStream(file, { start: 16 });
     const location = crypto.createDecipheriv("aes256", FOLDER_PATHS, initVect);
     const unzip = zlib.createUnzip();
