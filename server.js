@@ -33,7 +33,6 @@ mongoose.connection.on("reconnected", () =>
 
 //set cors
 app.use((req, res, next) => {
-  console.log("Running");
   res.header("Access-Control-Allow-Origin", "*");
   res.header(
     "Access-Control-Allow-Headers",
@@ -47,14 +46,13 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use("/", express.static("resources"));
-
 app.use("/api/v1/files", fileRoutes);
 app.use("/api/v1/contents", contentRoutes);
 
-app.get("*", express.static("resources"), (req, res) => {
+app.get("*", (req, res) => {
   try {
-    const file = path.resolve(path.join(__dirname, "resources", `${req.path}`));
+    const filepath = decodeURI(req.path);
+    const file = path.resolve(path.join(__dirname, "resources", `${filepath}`));
     if (!fs.existsSync(file)) {
       throw { message: "File not found!" };
     }
