@@ -31,6 +31,7 @@ mongoose.connection.on("reconnected", () =>
   console.log(`DB: Database reconnected ${new Date()}`)
 );
 
+app.use(express.json());
 //set cors
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
@@ -58,13 +59,14 @@ app.get("*", (req, res) => {
     }
     sendFile({ file, folder: process.env.FOLDERS, res });
   } catch (err) {
+    console.log(err);
     return res.send("File not found!");
   }
 });
 
 process.on("uncaughtException", (err) => {
+  console.log(err);
   console.log(err.name, err.message);
-  process.exit(1);
 });
 
 process.on("UnhandledRejection", (err) => {

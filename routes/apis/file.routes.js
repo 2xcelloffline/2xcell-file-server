@@ -2,6 +2,8 @@ const router = require("express").Router();
 const { default: axios } = require("axios");
 const fs = require("fs");
 
+const { downloadFile } = require("../../filemanager");
+
 const models = {
   subject: require("../../model/courseModels/subject"),
   chapter: require("../../model/courseModels/chapter"),
@@ -121,9 +123,9 @@ router.get("/remaining-downloads", async (req, res) => {
         },
       },
     ]);
-    
+
     var fileLinks = [...subjects, ...chapters, ...topics, ...modules];
-  
+
     subjects = null;
     chapters = null;
     topics = null;
@@ -132,7 +134,9 @@ router.get("/remaining-downloads", async (req, res) => {
     fileLinks = fileLinks.filter((link) => {
       try {
         const pathname = decodeURI(new URL(link.fileurl).pathname);
-        console.log(`${pathname} exists ${fs.existsSync(`./resources${pathname}`)}`);
+        console.log(
+          `${pathname} exists ${fs.existsSync(`./resources${pathname}`)}`
+        );
         return !fs.existsSync(`./resources${pathname}`);
       } catch (err) {
         return true;
@@ -158,11 +162,14 @@ router.get("/remaining-downloads", async (req, res) => {
  * @name downloadFile
  * @description download file from aws with signed url
  */
-router.get("/download-file", async (req, res) => {
+router.post("/download-file", async (req, res) => {
   try {
     //get signed download url
-    const signedRes = await axios.get(
-      `${process.env.ORIGIN}/api/v1/modules/download-signed-url?filepath=${req.query.filepath}`,
+    const signedRes = await axios.post(
+      `${process.env.ORIGIN}/api/v1/modules/download-signed-url`,
+      {
+        filepath: req.body.filepath,
+      },
       {
         headers: {
           token: req.headers.token,
@@ -174,10 +181,29 @@ router.get("/download-file", async (req, res) => {
     if (signedRes.data.status !== "success") throw signedRes.data;
 
     const fileRes = await axios.get(signedRes.data.data.signedURL, {
-      responseType: "blob",
+      responseType: "arraybuffer",
     });
 
-    fs.writeFileSync(`./resources/${req.query.filepath}`, fileRes.data);
+    let destination = "./resources";
+    const paths = [...req.body.filepath.split("/")];
+    for (let i = 1; i < paths.length - 1; i++) {
+      destination = `${destination}/${paths[i]}`;
+      if (fs.existsSync(`./${destination}`)) continue;
+      fs.mkdirSync(`./${destination}`);
+    }
+
+    const tempFolder = `${destination}/temp`;
+    const filename = paths[paths.length - 1];
+    fs.mkdirSync(`${destination}/temp`);
+    fs.writeFileSync(`./${tempFolder}/${filename}`, fileRes.data);
+
+    downloadFile({
+      source: `${tempFolder}/${filename}`,
+      destination: `${destination}/${filename}`,
+      folder: "123456",
+    });
+
+    //fs.unlinkSync(`${tempFolder}/${filename}`);
 
     return res.json({
       status: "done",
