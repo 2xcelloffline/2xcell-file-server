@@ -196,21 +196,21 @@ router.post("/download-file", async (req, res) => {
     const filename = paths[paths.length - 1];
     fs.mkdirSync(`${destination}/temp`);
     fs.writeFileSync(`./${tempFolder}/${filename}`, fileRes.data);
-
     downloadFile({
+      tempDir: tempFolder,
       source: `${tempFolder}/${filename}`,
       destination: `${destination}/${filename}`,
       folder: "123456",
     });
 
-    //fs.unlinkSync(`${tempFolder}/${filename}`);
-
     return res.json({
       status: "done",
+      data: {
+        filepath: destination,
+      },
       message: "File saved successfully",
     });
   } catch (err) {
-    console.log(err);
     return res.status(400).json({
       status: "fail",
       message: err.message,
