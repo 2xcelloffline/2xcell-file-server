@@ -134,9 +134,6 @@ router.get("/remaining-downloads", async (req, res) => {
     fileLinks = fileLinks.filter((link) => {
       try {
         const pathname = decodeURI(new URL(link.fileurl).pathname);
-        console.log(
-          `${pathname} exists ${fs.existsSync(`./resources${pathname}`)}`
-        );
         return !fs.existsSync(`./resources${pathname}`);
       } catch (err) {
         return true;
@@ -164,6 +161,12 @@ router.get("/remaining-downloads", async (req, res) => {
  */
 router.post("/download-file", async (req, res) => {
   try {
+    if (fs.existsSync(`./resources${req.body.filepath}`)) {
+      throw {
+        message:
+          "File already downloaded please refresh your page to see the changes!",
+      };
+    }
     //get signed download url
     const signedRes = await axios.post(
       `${process.env.ORIGIN}/api/v1/modules/download-signed-url`,
@@ -204,7 +207,7 @@ router.post("/download-file", async (req, res) => {
     });
 
     return res.json({
-      status: "done",
+      status: "success",
       data: {
         filepath: destination,
       },
