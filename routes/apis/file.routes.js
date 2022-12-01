@@ -8,7 +8,7 @@ const models = {
   topic: require("../../model/courseModels/topic"),
   module: require("../../model/courseModels/module"),
 };
-const origin = "http://127.0.0.1:5000";
+
 /**
  * @description return array of urls to download
  */
@@ -121,9 +121,9 @@ router.get("/remaining-downloads", async (req, res) => {
         },
       },
     ]);
-
+    
     var fileLinks = [...subjects, ...chapters, ...topics, ...modules];
-
+  
     subjects = null;
     chapters = null;
     topics = null;
@@ -131,7 +131,8 @@ router.get("/remaining-downloads", async (req, res) => {
 
     fileLinks = fileLinks.filter((link) => {
       try {
-        const pathname = new URL(link.fileurl).pathname;
+        const pathname = decodeURI(new URL(link.fileurl).pathname);
+        console.log(`${pathname} exists ${fs.existsSync(`./resources${pathname}`)}`);
         return !fs.existsSync(`./resources${pathname}`);
       } catch (err) {
         return true;
@@ -161,7 +162,7 @@ router.get("/download-file", async (req, res) => {
   try {
     //get signed download url
     const signedRes = await axios.get(
-      `https://api.2xcell.in/api/v1/modules/download-signed-url?filepath=${req.query.filepath}`,
+      `${process.env.ORIGIN}/api/v1/modules/download-signed-url?filepath=${req.query.filepath}`,
       {
         headers: {
           token: req.headers.token,
@@ -183,7 +184,6 @@ router.get("/download-file", async (req, res) => {
       message: "File saved successfully",
     });
   } catch (err) {
-
     console.log(err);
     return res.status(400).json({
       status: "fail",

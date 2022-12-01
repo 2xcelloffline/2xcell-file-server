@@ -33,11 +33,9 @@ router.get("/sync-course-contents", async (req, res) => {
     },
   };
 
-  const origin = "https://api.2xcell.in";
-
   for await (let model of Object.keys(models)) {
     try {
-      const res = await axios.get(`${origin}/api/v1/course-sync/${model}s`, {
+      const res = await axios.get(`${process.env.ORIGIN}/api/v1/course-sync/${model}s`, {
         headers: {
           token: req.headers.token,
         },
