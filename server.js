@@ -3,13 +3,13 @@ const express = require("express");
 const mongoose = require("mongoose");
 const path = require("path");
 const fs = require("fs");
-
 const app = express();
 
-const { sendFile } = require("./filemanager");
+const { sendFile, removeLoad } = require("./filemanager");
 
 const fileRoutes = require("./routes/apis/file.routes");
 const contentRoutes = require("./routes/apis/content.routes");
+const { createCipheriv } = require("crypto");
 
 mongoose
   .connect(process.env.MONGOURI || "mongodb://127.0.0.1:27017/2xcellDB", {
@@ -30,6 +30,15 @@ mongoose.connection.on("disconnected", () =>
 mongoose.connection.on("reconnected", () =>
   console.log(`DB: Database reconnected ${new Date()}`)
 );
+
+app.use(async (req, res, next) => {
+  try {
+    await removeLoad();
+    next();
+  } catch (err) {
+    return res.status(200).json({ message: err.message });
+  }
+});
 
 app.use(express.json());
 //set cors
@@ -65,7 +74,6 @@ app.get("*", (req, res) => {
 });
 
 process.on("uncaughtException", (err) => {
-  console.log(err);
   console.log(err.name, err.message);
 });
 
