@@ -3,6 +3,7 @@ const { default: axios } = require("axios");
 const fs = require("fs");
 
 const { downloadFile } = require("../../filemanager");
+const { parseUploadFormData } = require("../../formhandler");
 
 const models = {
   subject: require("../../model/courseModels/subject"),
@@ -219,6 +220,37 @@ router.post("/download-file", async (req, res) => {
       message: err.message,
     });
   }
+});
+
+router.post("/upload-file", parseUploadFormData, (req, res, next) => {
+  if (!fs.existsSync(`./myresources`)) fs.mkdirSync("myresources");
+
+  const module = new models.module({
+    ...req.body,
+    createdAt: Date.now(),
+  });
+  fs.mkdirSync(`myresources/${module._id}`);
+  //write directory
+  const resources = [];
+  req.files.forEach((file) => {
+    const dir = `myresources/${module._id}/${file.filename}`;
+    fs.writeFileSync(`./${dir}`, file.filevalue);
+    resources.push({
+      fieldName: file.fieldname,
+      fileName: `${module._id}/${file.filename}`,
+      fileUrl: `http://${req.get("host")}/${dir}`,
+    });
+  });
+
+  module.totalResources = resources.length;
+  module.resources = resources;
+
+  return res.status(200).json({
+    status: "success",
+    data: {
+      module,
+    },
+  });
 });
 
 module.exports = router;
