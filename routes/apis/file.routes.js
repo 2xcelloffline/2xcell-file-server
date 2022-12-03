@@ -10,6 +10,7 @@ const models = {
   chapter: require("../../model/courseModels/chapter"),
   topic: require("../../model/courseModels/topic"),
   module: require("../../model/courseModels/module"),
+  section: require("../../model/schoolModels/gradeSections"),
 };
 
 /**
@@ -222,45 +223,63 @@ router.post("/download-file", async (req, res) => {
   }
 });
 
-router.post("/upload-file", parseUploadFormData, (req, res, next) => {
-  if (!fs.existsSync(`./myresources`)) fs.mkdirSync("myresources");
+router.post("/upload-file", parseUploadFormData, async (req, res, next) => {
+  try {
+    if (!fs.existsSync(`./myresources`)) fs.mkdirSync("myresources");
 
-  const module = new models.module({
-    topicId: req.body.topicId,
-    name: req.body.name,
-    school: req.body.schoolId,
-    section: `${req.body.grade}-${req.body.section}`,
-    onModel: "staff",
-    creator: req.query.staffId,
-    public: false,
-    createdAt: Date.now(),
-    lang: ["english", "hindi"].includes(req.body.lang)
-      ? req.body.lang
-      : "english",
-  }).save();
-  
-  fs.mkdirSync(`myresources/${module._id}`);
-  //write directory
-  const resources = [];
-  req.files.forEach((file) => {
-    const dir = `myresources/${module._id}/${file.filename}`;
-    fs.writeFileSync(`./${dir}`, file.filevalue);
-    resources.push({
-      fieldName: file.fieldname,
-      fileName: `${module._id}/${file.filename}`,
-      fileUrl: `http://${req.get("host")}/${dir}`,
+    const gradeSection = await models.section.findOne({
+      _id: req.body.sectionId,
     });
-  });
 
-  module.totalResources = resources.length;
-  module.resources = resources;
+    const module = new models.module({
+      topicId: req.body.topicId,
+      name: req.body.name,
+      school: gradeSection.schoolId,
+      section: `${gradeSection.grade}-${gradeSection.section}`,
+      onModel: "staff",
+      creator: req.query.userId,
+      public: false,
+      createdAt: Date.now(),
+      lang: ["english", "hindi"].includes(req.body.lang)
+        ? req.body.lang
+        : "english",
+    });
 
-  return res.status(200).json({
-    status: "success",
-    data: {
-      module,
-    },
-  });
+    fs.mkdirSync(`myresources/${module._id}`);
+    //write directory
+    const resources = [];
+    req.files.forEach((file) => {
+      const dir = `myresources/${module._id}/${file.filename}`;
+      fs.writeFileSync(`./${dir}`, file.filevalue);
+      resources.push({
+        fieldName: file.fieldname,
+        fileName: `${module._id}/${file.filename}`,
+        fileUrl: `http://${req.get("host")}/${dir}`,
+      })
+    
+      if (file.fieldName === "thumbnail") {
+        module.thumbnail = `http://${req.get("host")}/${dir}`;
+      }
+    });
+
+    module.totalResources = resources.length;
+    module.resources = resources;
+
+    await module.save();
+
+    return res.status(200).json({
+      status: "success",
+      data: {
+        module,
+      },
+    });
+  } catch (err) {
+    console.log(err);
+    return res.status(200).json({
+      status: "fail",
+      message: "Error in file uploading",
+    });
+  }
 });
 
 module.exports = router;
