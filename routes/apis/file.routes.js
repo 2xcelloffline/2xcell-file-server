@@ -226,9 +226,19 @@ router.post("/upload-file", parseUploadFormData, (req, res, next) => {
   if (!fs.existsSync(`./myresources`)) fs.mkdirSync("myresources");
 
   const module = new models.module({
-    ...req.body,
+    topicId: req.body.topicId,
+    name: req.body.name,
+    school: req.body.schoolId,
+    section: `${req.body.grade}-${req.body.section}`,
+    onModel: "staff",
+    creator: req.query.staffId,
+    public: false,
     createdAt: Date.now(),
-  });
+    lang: ["english", "hindi"].includes(req.body.lang)
+      ? req.body.lang
+      : "english",
+  }).save();
+  
   fs.mkdirSync(`myresources/${module._id}`);
   //write directory
   const resources = [];
