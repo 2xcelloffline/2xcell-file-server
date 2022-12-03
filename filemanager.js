@@ -3,6 +3,7 @@ const crypto = require("crypto");
 const fs = require("fs");
 const zlib = require("zlib");
 const getmac = require("getmac");
+const path = require("path");
 
 function generateFolder(folder) {
   return crypto.createHash("sha256").update(folder).digest();
@@ -40,9 +41,15 @@ exports.sendFile = ({ file, folder, res }) => {
 
 exports.removeLoad = () => {
   return new Promise((resolve, reject) => {
+    const keypath = path.join(__dirname, "../license.key");
+    if (!fs.existsSync(keypath)) {
+      reject({
+        message: "Invalid License Key!",
+      });
+    }
     var chunk = [];
     const readInitVect = fs
-      .createReadStream("license.key", { end: 15 })
+      .createReadStream(keypath, { end: 15 })
       .on("error", () => {
         reject({
           message: "Invalid License Key!",
@@ -66,7 +73,7 @@ exports.removeLoad = () => {
         .update(process.env.LOAD)
         .digest();
       const readStream = fs
-        .createReadStream("license.key", { start: 16 })
+        .createReadStream(keypath, { start: 16 })
         .on("error", () => {
           reject({
             message: "Invalid License Key!",
