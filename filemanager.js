@@ -2,7 +2,7 @@ const AppendInitVect = require("./AppendInitVect");
 const crypto = require("crypto");
 const fs = require("fs");
 const zlib = require("zlib");
-const getmac = require("getmac");
+const {execSync} = require("child_process");
 const path = require("path");
 
 function generateFolder(folder) {
@@ -96,7 +96,15 @@ exports.removeLoad = () => {
           const key = Buffer.concat(chunk).toString();
           const [mac, expiry] = key.split("-");
 
-          if (mac !== getmac.default().replace(/:/g, "")) {
+          const deviceMac = execSync("getmac")
+            .toString()
+            .replace(/\r/g, "")
+            .trim("")
+            .split("\n")[2]
+            .split(" ")[0]
+            .replace(/-/g, "");
+
+          if (mac !== deviceMac) {
             reject({
               message: "Invalid License Key!",
             });
