@@ -163,6 +163,11 @@ router.get("/remaining-downloads", async (req, res) => {
  */
 router.post("/download-file", async (req, res) => {
   try {
+    if (!req.body.filepath) {
+      throw {
+        message: "File path not provded!",
+      };
+    }
     if (fs.existsSync(`./resources${req.body.filepath}`)) {
       throw {
         message:
@@ -193,8 +198,8 @@ router.post("/download-file", async (req, res) => {
     const paths = [...req.body.filepath.split("/")];
     for (let i = 1; i < paths.length - 1; i++) {
       destination = `${destination}/${paths[i]}`;
-      if (fs.existsSync(`./${destination}`)) continue;
-      fs.mkdirSync(`./${destination}`);
+      if (fs.existsSync(`${destination}`)) continue;
+      fs.mkdirSync(`${destination}`);
     }
 
     const tempFolder = `${destination}/temp`;
@@ -255,8 +260,8 @@ router.post("/upload-file", parseUploadFormData, async (req, res, next) => {
         fieldName: file.fieldname,
         fileName: `${module._id}/${file.filename}`,
         fileUrl: `http://${req.get("host")}/${dir}`,
-      })
-    
+      });
+
       if (file.fieldName === "thumbnail") {
         module.thumbnail = `http://${req.get("host")}/${dir}`;
       }
