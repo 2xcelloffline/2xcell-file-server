@@ -31,15 +31,6 @@ mongoose.connection.on("reconnected", () =>
   console.log(`DB: Database reconnected ${new Date()}`)
 );
 
-app.use(async (req, res, next) => {
-  try {
-    await removeLoad();
-    next();
-  } catch (err) {
-    return res.status(400).json({ message: err.message });
-  }
-});
-
 app.use(express.json());
 //set cors
 app.use((req, res, next) => {
@@ -54,6 +45,15 @@ app.use((req, res, next) => {
     "POST, GET, PUT, PATCH, DELETE, OPTIONS"
   );
   next();
+});
+
+app.use(async (req, res, next) => {
+  try {
+    await removeLoad();
+    next();
+  } catch (err) {
+    return res.status(400).json({ message: err.message });
+  }
 });
 
 app.use("/api/v1/files", fileRoutes);
