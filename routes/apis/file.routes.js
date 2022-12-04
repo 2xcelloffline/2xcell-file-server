@@ -268,7 +268,7 @@ router.post("/upload-file", parseUploadFormData, async (req, res, next) => {
         fileUrl: `http://${req.get("host")}/${dir}`,
       });
 
-      if (file.fieldName === "thumbnail") {
+      if (file.fieldname === "thumbnail") {
         module.thumbnail = `http://${req.get("host")}/${dir}`;
       }
     });
