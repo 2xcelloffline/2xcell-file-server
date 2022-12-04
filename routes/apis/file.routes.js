@@ -1,7 +1,6 @@
 const router = require("express").Router();
 const { default: axios } = require("axios");
 const fs = require("fs");
-const { model } = require("mongoose");
 
 const { downloadFile } = require("../../filemanager");
 const { parseUploadFormData } = require("../../formhandler");
@@ -13,6 +12,7 @@ const models = {
   module: require("../../model/courseModels/module"),
   section: require("../../model/schoolModels/gradeSections"),
   task: require("../../model/schoolModels/task"),
+  submission: require("../../model/schoolModels/submissions"),
 };
 
 /**
@@ -305,10 +305,12 @@ router.post("/upload-file", parseUploadFormData, async (req, res, next) => {
         lastDate = new Date(startDate).getTime() + 23 * 60 * 60 * 1000;
       }
 
-      if (lastDate < startDate)
-        return next(
-          new AppError("Task end date should be greater than start date")
-        );
+      if (lastDate < startDate) {
+        return res.status(400).json({
+          status: "success",
+          message: "Task end date should be greater than start date",
+        });
+      }
 
       await models.task.create({
         content: module._id,
@@ -334,12 +336,75 @@ router.post("/upload-file", parseUploadFormData, async (req, res, next) => {
       },
     });
   } catch (err) {
-    console.log(err);
     return res.status(200).json({
       status: "fail",
       message: "Error in file uploading",
     });
   }
 });
+
+router.post(
+  "/task-submission/:taskId",
+  parseUploadFormData,
+  async (req, res, next) => {
+    try {
+      const task = await models.task
+        .findOne({
+          _id: req.params.taskId,
+          submittedBy: { $nin: req.query.userId },
+        })
+        .populate("content", "+correctAnswers");
+
+      if (!task) throw { message: "Task already submitted or not found!" };
+      if (!task.submission) throw { message: "Submission not enabled!" };
+      if (new Date(task.from).getTime() >= Date.now())
+        throw { message: "Please wait! submission not started!" };
+
+      const file = req.files[0];
+      if (!file) {
+        return res.status(200).json({
+          status: "success",
+          message: "Please upload file!",
+        });
+      }
+
+      const submission = new models.submission.Submission({
+        userId: req.query.userId,
+        taskId: task._id,
+        submittedAt: Date.now(),
+      });
+
+      submission.setSubmitStatus(task.to, submission.submittedAt);
+      //upload student pdf content
+      const submPath = `./myresources/${submission._id}`;
+      fs.mkdirSync(submPath); //create submission folder
+      fs.writeFileSync(`${submPath}/${file.filename}`, file.filevalue);
+      submission.resources = [
+        {
+          fileName: file.filename,
+          fieldName: file.fieldname,
+          fileUrl: `http://${req.get("host")}/myresources/${
+            submission._id
+          }/${file.filename}`,
+        },
+      ];
+
+      submission.lastDeleteTime = task.to;
+      task.submittedBy.push(req.query.userId);
+      await submission.save();
+      await task.save({ validateBeforeSave: false });
+      //return response to
+      return res.status(200).json({
+        status: "success",
+        data: { submission },
+      });
+    } catch (err) {
+      return res.status(400).json({
+        status: "fail",
+        message: err.message,
+      });
+    }
+  }
+);
 
 module.exports = router;
