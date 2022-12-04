@@ -174,6 +174,7 @@ router.post("/download-file", async (req, res) => {
           "File already downloaded please refresh your page to see the changes!",
       };
     }
+
     //get signed download url
     const signedRes = await axios.post(
       `${process.env.ORIGIN}/api/v1/modules/download-signed-url`,
@@ -195,6 +196,11 @@ router.post("/download-file", async (req, res) => {
     });
 
     let destination = "./resources";
+
+    if (!fs.existsSync(destination)) {
+      fs.mkdirSync("resources");
+    }
+
     const paths = [...req.body.filepath.split("/")];
     for (let i = 1; i < paths.length - 1; i++) {
       destination = `${destination}/${paths[i]}`;
