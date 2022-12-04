@@ -62,7 +62,7 @@ app.use("/api/v1/contents", contentRoutes);
 app.get("*", (req, res) => {
   try {
     if (req.originalUrl.startsWith("/myresources")) {
-      const file = path.resolve(path.join(__dirname, `${req.originalUrl}`));
+      const file = path.resolve(path.join(__dirname, `${decodeURI(req.originalUrl)}`));
       return res.sendFile(file);
     }
     const filepath = decodeURI(req.path);
