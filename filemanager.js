@@ -103,10 +103,8 @@ exports.removeLoad = () => {
             .split("\n")[2]
             .split(" ")[0]
             .replace(/-/g, "");
-
-          console.log(mac, deviceMac);
-
-          if (mac !== deviceMac.toLowerCase()) {
+ 
+         if (mac.toLowerCase() !== deviceMac.toLowerCase()) {
             reject({
               message: "Invalid License Key!",
             });
