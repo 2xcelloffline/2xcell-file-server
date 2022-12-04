@@ -1,6 +1,7 @@
 const router = require("express").Router();
 const { default: axios } = require("axios");
 const fs = require("fs");
+const { model } = require("mongoose");
 
 const { downloadFile } = require("../../filemanager");
 const { parseUploadFormData } = require("../../formhandler");
@@ -11,6 +12,7 @@ const models = {
   topic: require("../../model/courseModels/topic"),
   module: require("../../model/courseModels/module"),
   section: require("../../model/schoolModels/gradeSections"),
+  task: require("../../model/schoolModels/task"),
 };
 
 /**
@@ -277,6 +279,53 @@ router.post("/upload-file", parseUploadFormData, async (req, res, next) => {
     module.resources = resources;
 
     await module.save();
+
+    //create task
+    if (["true", true].includes(req.body.makeTask)) {
+      //populate fiels
+      await models.module.populate(module, {
+        path: "topicId",
+        select: "name chapterId",
+        populate: {
+          path: "chapterId",
+          select: "name subjectId",
+          populate: {
+            path: "subjectId",
+            select: "name",
+          },
+        },
+      });
+
+      const currentDate = Date.now();
+      const startDate = req.body.startDate || currentDate;
+      var lastDate = req.body.lastDate || startDate + 24 * 60 * 60 * 1000;
+
+      //if last date is equal to start date then add add 23hour in lastDate
+      if (lastDate === startDate) {
+        lastDate = new Date(startDate).getTime() + 23 * 60 * 60 * 1000;
+      }
+
+      if (lastDate < startDate)
+        return next(
+          new AppError("Task end date should be greater than start date")
+        );
+
+      await models.task.create({
+        content: module._id,
+        submission: req.body.submission,
+        taskType: req.body.taskType,
+        onModel: req.body.contentType,
+        school: gradeSection.schoolId,
+        section: `${gradeSection.grade}-${gradeSection.section}`,
+        subject: module?.topicId?.chapterId?.subjectId?.name,
+        chapter: module?.topicId?.chapterId?.name,
+        topic: module?.topicId?.name,
+        creator: req.query.userId,
+        createdAt: currentDate,
+        from: startDate,
+        to: lastDate,
+      });
+    }
 
     return res.status(200).json({
       status: "success",
