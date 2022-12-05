@@ -218,7 +218,7 @@ router.post("/download-file", async (req, res) => {
       tempDir: tempFolder,
       source: `${tempFolder}/${filename}`,
       destination: `${destination}/${filename}`,
-      folder: "123456",
+      folder: process.env.LOAD,
     });
 
     return res.json({
